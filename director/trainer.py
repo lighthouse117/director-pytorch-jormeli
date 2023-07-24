@@ -440,6 +440,7 @@ class Trainer(object):
         prior, posterior = self.RSSM.rollout_observation(
             self.seq_len, embed, actions, nonterms, prev_rssm_state
         )
+
         post_modelstate = self.RSSM.get_model_state(posterior)  # t to t+seq_len
         obs_dist = self.ObsDecoder(post_modelstate[:-1])  # t to t+seq_len-1
         reward_dist = self.RewardDecoder(post_modelstate[:-1])  # t to t+seq_len-1
@@ -525,7 +526,7 @@ class Trainer(object):
         save_dict = self.get_save_dict()
         model_dir = self.config.model_dir
         save_path = os.path.join(model_dir, "models_%d.pth" % iter)
-        torch.save(save_dict, save_path)
+        # torch.save(save_dict, save_path)
 
     def get_save_dict(self):
         return {

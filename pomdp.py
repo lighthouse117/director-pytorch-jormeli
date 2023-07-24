@@ -100,7 +100,7 @@ def make_env(cfg):
         def _create_env(*args, **kwargs):
             return OneHotAction(
                 TransposeWrapper(
-                    gym.make(env_name, **cfg.environment_cfg.env_args),
+                    gym.make(env_name),
                     resize=cfg.environment_cfg.resize_obs,
                 )
             )
@@ -133,9 +133,11 @@ def run(cfg):
     configure_logging(use_json=False)
     wandb.login()
     env_name = cfg.environment_cfg.name
-    exp_id = datetime.now().isoformat() + "_pomdp"
+    exp_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_pomdp"
 
-    result_dir = os.path.join("results", "{}_{}".format(env_name, exp_id))
+    result_dir = os.path.join(
+        "results", "{}_{}".format(env_name.replace(":", "-"), exp_id)
+    )
     model_dir = os.path.join(result_dir, "models")  # dir to save learnt models
     os.makedirs(model_dir, exist_ok=True)
     best_save_path = os.path.join(model_dir, "best_model.pth")
@@ -162,6 +164,7 @@ def run(cfg):
         seq_len=seq_len,
         batch_size=batch_size,
         model_dir=model_dir,
+        capacity=5,
     )
     config.train_every = cfg.training_cfg.train_every
     config.train_steps = cfg.training_cfg.train_steps
@@ -176,7 +179,7 @@ def run(cfg):
     trainer = Trainer(config, device, cfg)
     trainer.goal_duration = goal_duration
 
-    with wandb.init(project="Director", config=config_dict):
+    with wandb.init(project="director-pytorch-jourmeli", config=config_dict):
         logging.info("Training...")
         trainer.collect_seed_episodes(env)
         obs, score = env.vector_reset(), np.zeros(num_parallel_envs)
@@ -314,7 +317,7 @@ def run(cfg):
                                 best_mean_score = current_average
                                 logging.info(f"Saving best model with mean score: {best_mean_score}")
                                 save_dict = trainer.get_save_dict()
-                                torch.save(save_dict, best_save_path)
+                                # torch.save(save_dict, best_save_path)
                     else:
                         obs[env_id] = next_obs[env_id]
                         prev_rssmstate.mean[env_id] = posterior_rssm_state.mean[env_id]
